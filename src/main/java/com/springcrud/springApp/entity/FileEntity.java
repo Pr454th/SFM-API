@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Arrays;
+
 @Entity
 @Table(name="files")
 @Data
@@ -23,21 +25,22 @@ public class FileEntity {
     @Column(name="file_data",length=16777219)
     private byte[] fileData;
 
-    @Column(name="file_year",length=50)
-    private int year;
+    @Column(name="file_key",length=50)
+    private String key;
 
     @Override
     public String toString() {
         return "FileEntity{" +
                 "fileId=" + fileId +
                 ", fileName='" + fileName + '\'' +
-                ", year=" + year +
+                ", fileData=" + Arrays.toString(fileData) +
+                ", key='" + key + '\'' +
                 '}';
     }
 
-    public FileEntity(String fileName,byte[] fileData,int year){
+    public FileEntity(String fileName, byte[] fileData, String key){
         this.fileData=fileData;
         this.fileName=fileName;
-        this.year=year;
+        this.key=key;
     }
 }

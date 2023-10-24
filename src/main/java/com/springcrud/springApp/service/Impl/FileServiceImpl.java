@@ -12,6 +12,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.http.MediaType;
+import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -32,10 +34,44 @@ public class FileServiceImpl implements FileService {
     private FileRepo fileRepo;
 
     @Override
-    public String addFile(FileDTOSave fileDTOSave){
-        FileEntity fileEntity=new FileEntity(fileDTOSave.getFileName(),fileDTOSave.getFileData(),fileDTOSave.getYear());
-        fileRepo.save(fileEntity);
-        return fileEntity.getFileName();
+    public int addFile(MultipartFile file, String key) {
+        try {
+            String hashedKey = DigestUtils.md5DigestAsHex(key.getBytes());
+            byte[] aesKeyBytes = key.getBytes(); // Replace with your secret key
+            SecretKeySpec aesKey = new SecretKeySpec(aesKeyBytes, "AES");
+
+            // Initialize the AES cipher in encryption mode
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.ENCRYPT_MODE, aesKey);
+
+            // Encrypt the uploaded file bytes
+            byte[] encryptedFileBytes = cipher.doFinal(file.getBytes());
+
+            // Save the encrypted file to the database
+            FileDTOSave encryptedFile = new FileDTOSave();
+            encryptedFile.setFileName(file.getOriginalFilename());
+            encryptedFile.setFileData(encryptedFileBytes);
+            encryptedFile.setKey(hashedKey);
+
+            FileEntity fileEntity = new FileEntity(encryptedFile.getFileName(), encryptedFile.getFileData(), encryptedFile.getKey());
+            fileRepo.save(fileEntity);
+            return fileEntity.getFileId();
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    @Override
+    public boolean getAuthenticate(int id,String key){
+        String hashedKey=getHashedKey(id);
+        if(hashedKey!=null) {
+            String Key = DigestUtils.md5DigestAsHex(key.getBytes());
+            System.out.println(hashedKey+"-"+Key);
+            return hashedKey.equals(Key);
+        }
+        return false;
     }
 
     @Override
@@ -43,7 +79,7 @@ public class FileServiceImpl implements FileService {
         List<FileEntity> getfiles=fileRepo.findAll();
         List<FileDTO> fileList=new ArrayList<>();
         for(FileEntity fe:getfiles){
-            FileDTO f=new FileDTO(fe.getFileId(),fe.getFileName(),fe.getFileData(),fe.getYear());
+            FileDTO f=new FileDTO(fe.getFileId(),fe.getFileName(),fe.getFileData(),fe.getKey());
             fileList.add(f);
         }
         return fileList;
@@ -54,7 +90,7 @@ public class FileServiceImpl implements FileService {
         if(fileRepo.existsById(fileDTOUpdate.getFileId())){
             FileEntity fe=fileRepo.getById(fileDTOUpdate.getFileId());
             fe.setFileName(fileDTOUpdate.getFileName());
-            fe.setYear(fileDTOUpdate.getYear());
+            fe.setKey(fileDTOUpdate.getKey());
             fileRepo.save(fe);
             return fileDTOUpdate.getFileName();
         }
@@ -73,8 +109,16 @@ public class FileServiceImpl implements FileService {
         return false;
     }
 
+    public String getHashedKey(int id){
+        Optional<FileEntity> optionalFile=fileRepo.findById(id);
+        if(optionalFile.isPresent()){
+            return optionalFile.get().getKey();
+        }
+        return null;
+    }
+
     @Override
-    public FileDTO getFile(int id){
+    public FileDTO getFile(int id,String key){
         Optional<FileEntity> optionalFile = fileRepo.findById(id);
 
         if (optionalFile.isPresent()) {
@@ -84,7 +128,7 @@ public class FileServiceImpl implements FileService {
             // Decrypt the file content
             try {
                 // Generate an AES decryption key using the same key used for encryption
-                byte[] aesKeyBytes = "YourSecretKey123".getBytes(); // Replace with your secret key
+                byte[] aesKeyBytes = key.getBytes(); // Replace with your secret key
                 SecretKeySpec aesKey = new SecretKeySpec(aesKeyBytes, "AES");
 
                 Cipher cipher = Cipher.getInstance("AES");

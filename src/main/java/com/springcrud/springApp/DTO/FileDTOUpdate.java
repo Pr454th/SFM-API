@@ -10,14 +10,14 @@ import lombok.NoArgsConstructor;
 public class FileDTOUpdate {
     private int fileId;
     private String fileName;
-    private int year;
+    private String key;
 
     @Override
     public String toString() {
-        return "FileDTO{" +
+        return "FileDTOUpdate{" +
                 "fileId=" + fileId +
                 ", fileName='" + fileName + '\'' +
-                ", year=" + year +
+                ", key='" + key + '\'' +
                 '}';
     }
 }

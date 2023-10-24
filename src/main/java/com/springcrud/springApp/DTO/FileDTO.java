@@ -13,7 +13,7 @@ public class FileDTO {
     private int fileId;
     private String fileName;
     private byte[] fileData;
-    private int year;
+    private String key;
 
     @Override
     public String toString() {
@@ -21,7 +21,7 @@ public class FileDTO {
                 "fileId=" + fileId +
                 ", fileName='" + fileName + '\'' +
                 ", fileData=" + Arrays.toString(fileData) +
-                ", year=" + year +
+                ", key='" + key + '\'' +
                 '}';
     }
 }

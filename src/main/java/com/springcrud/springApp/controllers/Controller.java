@@ -32,55 +32,57 @@ public class Controller {
     private FileService fileService;
 
     @PostMapping(path="/save")
-    public String handleFileUpload(@RequestParam("file") MultipartFile file,@RequestParam("year") int year) {
+    public int handleFileUpload(@RequestParam("file") MultipartFile file,@RequestParam("key") String key) {
         if (!file.isEmpty()) {
             try {
-                // Generate an AES encryption key (16 bytes for AES-128)
-                byte[] aesKeyBytes = "YourSecretKey123".getBytes(); // Replace with your secret key
-                SecretKeySpec aesKey = new SecretKeySpec(aesKeyBytes, "AES");
-
-                // Initialize the AES cipher in encryption mode
-                Cipher cipher = Cipher.getInstance("AES");
-                cipher.init(Cipher.ENCRYPT_MODE, aesKey);
-
-                // Encrypt the uploaded file bytes
-                byte[] encryptedFileBytes = cipher.doFinal(file.getBytes());
-
-                // Save the encrypted file to the database
-                FileDTOSave encryptedFile = new FileDTOSave();
-                encryptedFile.setFileName(file.getOriginalFilename());
-                encryptedFile.setFileData(encryptedFileBytes);
-                encryptedFile.setYear(year);
-                fileService.addFile(encryptedFile);
+//                // Generate an AES encryption key (16 bytes for AES-128)
+//                byte[] aesKeyBytes = "YourSecretKey123".getBytes(); // Replace with your secret key
+//                SecretKeySpec aesKey = new SecretKeySpec(aesKeyBytes, "AES");
+//
+//                // Initialize the AES cipher in encryption mode
+//                Cipher cipher = Cipher.getInstance("AES");
+//                cipher.init(Cipher.ENCRYPT_MODE, aesKey);
+//
+//                // Encrypt the uploaded file bytes
+//                byte[] encryptedFileBytes = cipher.doFinal(file.getBytes());
+//
+//                // Save the encrypted file to the database
+//                FileDTOSave encryptedFile = new FileDTOSave();
+//                encryptedFile.setFileName(file.getOriginalFilename());
+//                encryptedFile.setFileData(encryptedFileBytes);
+                int id=fileService.addFile(file,key);
 
                 // Redirect to a success page
-                return "redirect:/success";
-            } catch (IOException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
-                     IllegalBlockSizeException | BadPaddingException e) {
+                return id;
+            } catch (Exception e) {
                 e.printStackTrace();
                 // Handle the error
-                return "redirect:/error";
+                return -1;
             }
         } else {
-            return "redirect:/error";
+            return -1;
         }
     }
 
-    @GetMapping("/download/{id}")
-    public ResponseEntity<ByteArrayResource> downloadFile(@PathVariable(value="id") int id) {
+    @GetMapping("/download/{id}/{key}")
+    public ResponseEntity<ByteArrayResource> downloadFile(@PathVariable(value="id") int id,@PathVariable(value="key") String key) {
 
-        FileDTO file=fileService.getFile(id);
+        boolean authentify=fileService.getAuthenticate(id,key);
+        if(authentify) {
+            FileDTO file = fileService.getFile(id,key);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.set("Content-Disposition", "attachment; filename=" + file.getFileName() + "; year=" + file.getYear());
-//        headers.setContentDispositionFormData("attachment", file.getFileName());
-//        headers.add("Content-Disposition", "attachment; year="+String.valueOf(file.getYear()));
-        ByteArrayResource resource = new ByteArrayResource(file.getFileData());
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.set("Content-Disposition", "attachment; filename=" + file.getFileName());
+            //        headers.setContentDispositionFormData("attachment", file.getFileName());
+            //        headers.add("Content-Disposition", "attachment; year="+String.valueOf(file.getYear()));
+            ByteArrayResource resource = new ByteArrayResource(file.getFileData());
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(resource);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(resource);
+        }
+        return null;
     }
 
 //    @PostMapping(path="/save")
