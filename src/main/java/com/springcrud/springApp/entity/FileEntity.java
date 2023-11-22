@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.java.Log;
 
 import java.util.Arrays;
 
@@ -14,7 +15,7 @@ import java.util.Arrays;
 @NoArgsConstructor
 public class FileEntity {
     @Id
-    @Column(name="file_id",length=50)
+    @Column(name="file_id",length=100)
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int fileId;
 
@@ -22,7 +23,7 @@ public class FileEntity {
     private String fileName;
 
     @Lob @Basic(fetch = FetchType.LAZY)
-    @Column(name="file_data",length=16777219)
+    @Column(name="file_data",length=99999999)
     private byte[] fileData;
 
     @Column(name="file_key",length=50)
